@@ -1,0 +1,45 @@
+name: Run Newman Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  newman-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Install Newman
+        run: npm install -g newman
+
+      - name: Run Newman Collection
+        run: |
+          newman run swagger_petstore.postman_collection.json \
+            --environment petstore_api.postman_environment.json \
+            --reporters cli, html \
+            --reporter-html-export newman/report.html
+
+      - name: Upload Newman Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: newman-report
+          path: newman/
+
+      - name: Deploy to GitHub Pages
+        if: always()
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GH_PAGES_TOKEN }}
+          publish_dir: ./newman
